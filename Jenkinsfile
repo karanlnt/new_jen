@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-ci-demo"
-        CONTAINER_PORT = "4000"
+        CONTAINER_PORT = "1000"
     }
 
     stages {
@@ -24,7 +24,7 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    sh 'docker run -d -p 4000:4000 $IMAGE_NAME'
+                    sh 'docker run -d -p 1000:1000 $IMAGE_NAME'
                 }
             }
         }
