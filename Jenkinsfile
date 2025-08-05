@@ -1,23 +1,23 @@
 pipeline {
-  agent any
-
-  stages {
-    stage('Clean Workspace') {
-      steps { cleanWs() }
+    agent any
+    stages {
+        stage('Clone') {
+            steps {
+                git branch: 'main', url: 'https://github.com/karanlnt/<your-repo>.git'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t flask-docker .'
+            }
+        }
+        stage('Run Docker Container') {
+            steps {
+                sh '''
+                  docker rm -f flask-container || true
+                  docker run -d -p 4000:4000 --name flask-container flask-docker
+                '''
+            }
+        }
     }
-    stage('Checkout') {
-      steps { checkout scm }
-    }
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build --no-cache -t flask-ci-demo .'
-      }
-    }
-    stage('Run Container') {
-      steps {
-        sh 'docker run --rm -d -p 4000:4000 flask-ci-demo'
-      }
-    }
-  }
-  post { always { cleanWs() } }
 }
