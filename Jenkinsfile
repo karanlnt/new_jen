@@ -1,5 +1,16 @@
 pipeline {
     agent any
+    properties([pipelineTriggers([githubPush()])])
+
+  stages {
+    stage('Pull Code') {
+      steps {
+        git url: 'https://github.com/karanlnt/new_jen.git', branch: 'main'
+      }
+    }
+    // Add more stages as needed
+  }
+}
 
     environment {
         IMAGE_NAME = "flask-ci-demo"
