@@ -1,79 +1,38 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_IMAGE = 'flask-ci-demo'   // Change to your DockerHub repo
-        CONTAINER_PORT = '4000'
-        CONTAINER_NAME = 'exciting_meitner'
-    }
-
     stages {
-        stage('Clone Repository') {
+        stage('Clean Workspace') {
             steps {
-                git branch: 'main', url: 'https://github.com/karanlnt/new_jen.git'
+                cleanWs()
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Checkout Code') {
             steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Build Project') {
-            steps {
-                sh 'npm run build'
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $DOCKER_IMAGE ."
+                sh 'docker build --no-cache -t flask-docker .'
             }
         }
 
-        stage('Push Docker Image') {
-            when {
-                expression { return env.DOCKER_USERNAME != null && env.DOCKER_PASSWORD != null }
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh '''
-                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                        docker push $DOCKER_IMAGE
-                    '''
-                }
-            }
-        }
-
-        stage('Cleanup Old Containers') {
+        stage('Run Container') {
             steps {
                 sh '''
-                    CONTAINER_ID=$(docker ps -q --filter "name=$CONTAINER_NAME")
-                    if [ ! -z "$CONTAINER_ID" ]; then
-                        echo "Stopping old container $CONTAINER_NAME"
-                        docker stop $CONTAINER_NAME
-                        docker rm $CONTAINER_NAME
-                    fi
-                '''
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                sh '''
-                    docker run -d -p ${CONTAINER_PORT}:3500 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}
+                    docker rm -f flask-container || true
+                    docker run -d -p 4000:4000 --name flask-container flask-docker
                 '''
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Deployment Successful!'
+        always {
+            cleanWs()
         }
-        failure {
-            echo '❌ Deployment Failed!'
-        }
-    }
+    }
 }
