@@ -1,20 +1,23 @@
 pipeline {
   agent any
+
   stages {
-    stage('Build') {
+    stage('Clean Workspace') {
+      steps { cleanWs() }
+    }
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Build Docker Image') {
       steps {
-        sh 'echo "Building..."'
+        sh 'docker build --no-cache -t flask-ci-demo .'
       }
     }
-    stage('Test') {
+    stage('Run Container') {
       steps {
-        sh 'echo "Testing..."'
+        sh 'docker run --rm -d -p 4000:4000 flask-ci-demo'
       }
     }
   }
-  post {
-    always {
-      echo 'Pipeline finished.'
-    }
-  }
+  post { always { cleanWs() } }
 }
