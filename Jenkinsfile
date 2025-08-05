@@ -1,37 +1,48 @@
 pipeline {
     agent any
 
+    environment {
+        // Define environment variables if needed
+        NODE_ENV = 'production'
+    }
+
+    tools {
+        nodejs 'NodeJS_18'  // Make sure this matches your Jenkins Node.js tool name
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/karanlnt/new_jen.git', branch: 'main'
+                echo 'Cloning from GitHub...'
+                checkout scm
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Install Dependencies') {
             steps {
-                sh 'docker build -t flask-docker .'
+                echo 'Installing dependencies...'
+                sh 'npm install'
             }
         }
 
-        stage('Cleanup Old Containers') {
+        stage('Build') {
             steps {
-                script {
-                    // Stop and remove any container using port 4000
-                    sh '''
-                        CONTAINER_ID=$(docker ps -q --filter "publish=4000")
-                        if [ ! -z "$CONTAINER_ID" ]; then
-                            docker stop $CONTAINER_ID
-                            docker rm $CONTAINER_ID
-                        fi
-                    '''
-                }
+                echo 'Building the project...'
+                sh 'npm run build'
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Test') {
             steps {
-                sh 'docker run -d -p 4000:4000 --name flask-container flask-docker'
+                echo 'Running tests...'
+                sh 'npm test || true' // Optional: Continue if no tests
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying the application...'
+                sh 'npx serve -s build -l 3000 &'
             }
         }
     }
@@ -40,5 +51,11 @@ pipeline {
         always {
             echo 'Pipeline execution completed.'
         }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
     }
 }
